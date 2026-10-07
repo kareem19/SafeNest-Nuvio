@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SafeNest – family safety labels for your movies</title>
+<meta name="description" content="Add a Safe / Slightly Safe / Unsafe label with the reasons to every movie and show in Nuvio.">
+<style>
+:root{--bg:#0b0d12;--card:#141824;--line:#232a3b;--text:#eef1f7;--mute:#9aa4b8;--accent:#4f8cff;--ok:#2ecc71;--warn:#f39c12;--bad:#e5484d}
+@media (prefers-color-scheme:light){:root{--bg:#f4f6fb;--card:#fff;--line:#dfe4ef;--text:#111827;--mute:#5b6478;--accent:#2563eb}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) 16px 40px}
+.wrap{max-width:760px;margin:0 auto}
+header{padding:34px 0 14px;text-align:center}
+.logo{font-size:44px;line-height:1}
+h1{margin:8px 0 4px;font-size:30px;letter-spacing:-.5px}
+.sub{color:var(--mute);margin:0 auto;max-width:520px}
+section{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:16px}
+h2{margin:0 0 4px;font-size:18px}
+.hint{color:var(--mute);font-size:14px;margin:0 0 12px}
+.styles{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.style{all:unset;box-sizing:border-box;cursor:pointer;border:2px solid var(--line);border-radius:16px;padding:12px;background:var(--bg);transition:.15s}
+.style:focus-visible{outline:3px solid var(--accent)}
+.style[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.style b{display:block;margin-bottom:2px}
+.style small{display:block;color:var(--mute);margin-bottom:8px}
+.phone{background:#0e0e11;color:#e8e8ee;border-radius:12px;padding:12px;font-size:13px;line-height:1.35;white-space:pre-wrap;min-height:120px;overflow:hidden;word-break:break-word}
+.phone .t{font-weight:700;font-size:14px;display:block;margin-bottom:2px}
+label{display:block;font-weight:600;margin:10px 0 6px}
+input[type=text]{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{all:unset;cursor:pointer;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--bg);font-size:14px}
+.chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn{all:unset;box-sizing:border-box;cursor:pointer;display:inline-block;padding:13px 20px;border-radius:12px;background:var(--accent);color:#fff;font-weight:700;text-align:center}
+.btn.alt{background:transparent;border:1px solid var(--line);color:var(--text)}
+.btn:focus-visible{outline:3px solid var(--text)}
+.btn[disabled]{opacity:.5}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.out{display:none;margin-top:14px}
+.out code{display:block;padding:12px;border-radius:12px;background:var(--bg);border:1px solid var(--line);word-break:break-all;font-size:13px}
+.msg{margin:10px 0 0;font-size:14px}
+.msg.warn{color:var(--warn)}.msg.err{color:var(--bad)}.msg.ok{color:var(--ok)}
+ol{padding-left:20px;margin:8px 0}
+details{margin-top:8px}summary{cursor:pointer;font-weight:600}
+footer{color:var(--mute);font-size:13px;text-align:center;margin-top:26px}
+a{color:var(--accent)}
+.dots{display:inline-flex;gap:6px;margin-right:6px}
+.dots i{width:10px;height:10px;border-radius:50%;display:inline-block}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="logo">🪺</div>
+  <h1>SafeNest</h1>
+  <p class="sub">A clear <b>Safe / Slightly Safe / Unsafe</b> label for every movie and show, with the reasons, before family movie night.</p>
+  <p class="sub"><span class="dots"><i style="background:var(--ok)"></i><i style="background:var(--warn)"></i><i style="background:var(--bad)"></i></span>Works as an addon for Nuvio and other Stremio-style apps.</p>
+</header>
+
+<section>
+  <h2>1. Pick how the card looks</h2>
+  <p class="hint">Tap one. These previews come from the real addon.</p>
+  <div class="styles" id="styles"></div>
+</section>
+
+<section>
+  <h2>2. Optional settings</h2>
+  <p class="hint">Only needed for titles that Common Sense Media does not cover: the app then falls back to age ratings from TMDB.</p>
+  <label for="tmdb">Your TMDB API key (optional)</label>
+  <input id="tmdb" type="text" inputmode="latin" autocomplete="off" spellcheck="false" placeholder="32 characters, from themoviedb.org/settings/api">
+  <p class="hint" style="margin-top:6px">Free account → Settings → API → copy the <i>API Key</i> (not the long token). It is stored inside your personal link, so keep that link private.</p>
+  <label>Countries for age ratings</label>
+  <div class="chips" id="countries"></div>
+</section>
+
+<section>
+  <h2>3. Get your link</h2>
+  <div class="row"><button class="btn" id="make">Create my link</button></div>
+  <div class="out" id="out">
+    <code id="link"></code>
+    <div class="row">
+      <button class="btn" id="copy">Copy link</button>
+      <a class="btn alt" id="open" href="#">Open in app</a>
+    </div>
+    <p class="msg" id="note"></p>
+    <details><summary>How to add it in Nuvio</summary>
+      <ol>
+        <li>Copy the link above.</li>
+        <li>In Nuvio, open the addons screen and choose to add an addon by URL.</li>
+        <li>Paste the link and confirm. A SafeNest card now appears in the source list of each title.</li>
+        <li>Tap a card to open the original Common Sense Media page.</li>
+      </ol>
+    </details>
+  </div>
+  <p class="msg err" id="err"></p>
+</section>
+
+<section>
+  <h2>Good to know</h2>
+  <p class="hint" style="margin:0">The label is an estimate based on Common Sense Media's age rating and descriptions (with other sources as backup). It is a guide, not a guarantee: always check what is right for your family. SafeNest is not affiliated with Common Sense Media, TMDB or IMDb.</p>
+</section>
+
+<footer>Data: Common Sense Media · TMDB · isitsafe.tv · Kids-In-Mind · IMDb</footer>
+</div>
+
+<script>
+// ▼▼ Edit this one line: the address of your Cloudflare Worker (no trailing slash) ▼▼
+const API = new URLSearchParams(location.search).get('api') || 'https://YOUR-WORKER.workers.dev';
+// ▲▲ ----------------------------------------------------------------------- ▲▲
+
+const STYLES = {
+  compact:  { title: 'Compact',  desc: 'One short line per category. Quick to read.' },
+  detailed: { title: 'Detailed', desc: 'Every sentence from the Common Sense "Why age" section.' },
+  minimal:  { title: 'Minimal',  desc: 'Only the rating dots, no descriptions.' },
+};
+// shown until the live preview arrives (or if the server is not reachable)
+const FALLBACK = {
+  compact: '🟠 SLIGHTLY SAFE · 12+\n\n🟠 Violence\nLots of cartoonish violence.\n\n🟠 Sex\nCleavage jokes and a suggestive dance.\n\n🟠 Language\nSome mild profanity.',
+  detailed: '🟠 SLIGHTLY SAFE · 12+\n\nWhy age 12+?\n\nViolence & Scariness  ●●●○○\nLots of cartoonish violence. Characters are flattened, blown up and shot, but they bounce back.\n\nSex, Romance & Nudity  ●●○○○\nCameron Diaz\'s cleavage is its own character. A suggestive dance number.\n\nLanguage  ●●●○○\nSome profanity.',
+  minimal: '🟠 SLIGHTLY SAFE · 12+\n\nViolence  ●●●○○\nSex  ●●○○○\nLanguage  ●●●○○',
+};
+const COUNTRIES = ['US','GB','DE','FR','ES','IT','CA','AU'];
+let style = 'compact';
+const picked = new Set(['US','GB','DE']);
+const $ = (id) => document.getElementById(id);
+const clean = (t) => t.replace(/[\u2060\u200B\u200C\u2800]/g, '');
+
+function drawStyles() {
+  $('styles').innerHTML = '';
+  for (const [id, s] of Object.entries(STYLES)) {
+    const b = document.createElement('button');
+    b.className = 'style'; b.setAttribute('aria-pressed', String(id === style)); b.dataset.id = id;
+    b.innerHTML = `<b>${s.title}</b><small>${s.desc}</small><div class="phone" id="pv-${id}"></div>`;
+    b.onclick = () => { style = id; drawStyles(); };
+    $('styles').appendChild(b);
+    $('pv-' + id).textContent = FALLBACK[id];
+    if (window._live && window._live[id]) $('pv-' + id).textContent = window._live[id];
+  }
+}
+async function loadPreviews() {
+  window._live = {};
+  for (const id of Object.keys(STYLES)) {
+    try {
+      const r = await fetch(`${API}/api/preview/${id}.json`);
+      if (!r.ok) continue;
+      const j = await r.json();
+      window._live[id] = clean(j.name) + '\n' + clean(j.description).replace(/^\n+/, '');
+    } catch (e) { /* keep the fallback text */ }
+  }
+  drawStyles();
+}
+function drawCountries() {
+  $('countries').innerHTML = '';
+  for (const c of COUNTRIES) {
+    const b = document.createElement('button');
+    b.className = 'chip'; b.textContent = c; b.setAttribute('aria-pressed', String(picked.has(c)));
+    b.onclick = () => { picked.has(c) ? picked.delete(c) : picked.add(c); drawCountries(); };
+    $('countries').appendChild(b);
+  }
+}
+$('make').onclick = async () => {
+  $('err').textContent = ''; $('make').disabled = true;
+  try {
+    const body = { s: style, t: $('tmdb').value.trim() || undefined, c: picked.size ? [...picked].join(',') : undefined };
+    const r = await fetch(`${API}/api/config`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error('The server answered ' + r.status);
+    const j = await r.json();
+    const url = API + j.path;
+    $('link').textContent = url;
+    $('open').href = url.replace(/^https?:\/\//, 'stremio://');
+    const note = $('note');
+    if (body.t && j.keyValid === false) { note.className = 'msg warn'; note.textContent = 'That TMDB key was not accepted, so it will be ignored. Check it, or leave the field empty.'; }
+    else if (j.encrypted) { note.className = 'msg ok'; note.textContent = 'Your settings are encrypted inside this link.'; }
+    else { note.className = 'msg'; note.textContent = body.t ? 'Your TMDB key is part of this link. Do not share it.' : ''; }
+    $('out').style.display = 'block';
+    $('out').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch (e) {
+    $('err').textContent = (API.includes('YOUR-WORKER') ? 'The page is not connected to a server yet (see the API line at the top of the script). ' : 'Could not reach the server. ') + e.message;
+  } finally { $('make').disabled = false; }
+};
+$('copy').onclick = async () => {
+  const text = $('link').textContent;
+  try { await navigator.clipboard.writeText(text); } catch (e) {
+    const r = document.createRange(); r.selectNodeContents($('link')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('copy');
+  }
+  $('copy').textContent = 'Copied ✓'; setTimeout(() => ($('copy').textContent = 'Copy link'), 1800);
+};
+drawStyles(); drawCountries(); loadPreviews();
+</script>
+</body>
+</html>
